@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>火车过山洞问题计算器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', '微软雅黑', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #eef5fd; /* Light sky blue background */
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            width: 95%;
+            max-width: 650px; /* Wider container */
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 1.6em;
+            font-weight: 600;
+        }
+
+        .input-section {
+            display: grid; /* Use grid for better alignment */
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive columns */
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+        .input-group label .unit {
+            font-size: 0.9em;
+            color: #777;
+        }
+
+        .input-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .input-group input[type="number"]::-webkit-outer-spin-button,
+        .input-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        .input-group input[type="number"] { -moz-appearance: textfield; }
+        .input-group input[type="number"]:focus {
+            outline: none;
+            border-color: #5dade2; /* Light blue accent */
+            box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.15);
+        }
+
+        button#calculate-button {
+            background-color: #5dade2; /* Light blue accent */
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 10px;
+            width: 100%;
+            font-weight: 500;
+        }
+        button#calculate-button:hover {
+            background-color: #3498db; /* Darker blue */
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85em;
+            margin-top: 5px;
+            min-height: 1.1em;
+            text-align: left;
+        }
+
+        /* --- Visualization Area --- */
+        .visualization-area, .calculation-area {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            width: 95%;
+            max-width: 650px;
+            margin-bottom: 20px;
+        }
+        .visualization-area h4, .calculation-area h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #34495e;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        #tunnel-visualization {
+            position: relative;
+            height: 100px; /* Fixed height for visualization */
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden; /* Hide overflowing train */
+            border: 1px solid #ddd;
+        }
+
+        .tunnel {
+            position: absolute;
+            top: 20px; /* Position tunnel vertically */
+            height: 60px;
+            background-color: #7f8c8d; /* Gray for tunnel */
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9em;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        .tunnel-label {
+            position: absolute;
+            bottom: -20px; /* Label below tunnel */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8em;
+            color: #555;
+            white-space: nowrap;
+        }
+
+
+        .train {
+            position: absolute;
+            top: 30px; /* Align train vertically */
+            height: 40px;
+            background-color: #e74c3c; /* Red train */
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            white-space: nowrap;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            /* Animation will be controlled by JS */
+            left: -200px; /* Start off-screen */
+            transition: left 1s linear; /* Smooth movement */
+        }
+        .train-label {
+             position: absolute;
+             top: -20px; /* Label above train */
+             left: 50%;
+             transform: translateX(-50%);
+             font-size: 0.8em;
+             color: #c0392b;
+             white-space: nowrap;
+        }
+
+        .distance-marker {
+            position: absolute;
+            top: 5px;
+            height: 10px;
+            border-left: 1px dashed #3498db;
+        }
+        .distance-label {
+            position: absolute;
+            top: -15px;
+            font-size: 0.75em;
+            color: #3498db;
+            white-space: nowrap;
+            transform: translateX(-50%);
+        }
+
+
+        /* --- Calculation Steps Area --- */
+        #calculation-steps {
+            text-align: left;
+            font-size: 1em; /* Slightly larger for kids */
+            line-height: 1.8;
+            color: #333;
+        }
+        #calculation-steps p {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border-left: 4px solid #5dade2;
+            background-color: #f8fafd;
+        }
+         #calculation-steps p.formula {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            background-color: #eaf0ff;
+            border-left-color: #3498db;
+         }
+         #calculation-steps p.important {
+             background-color: #fff0f0; /* Highlight important step */
+             border-left-color: #e74c3c;
+             font-weight: bold;
+         }
+         #calculation-steps p.mistake {
+             background-color: #fef9e7; /* Highlight mistake */
+             border-left-color: #f39c12;
+             font-style: italic;
+         }
+         #calculation-steps strong {
+             color: #2980b9; /* Blue for emphasis */
+         }
+         #calculation-steps .unit {
+             font-style: italic;
+             color: #777;
+             font-size: 0.9em;
+         }
+
+
+        /* --- Result Area --- */
+        .result-area {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f8f5; /* Light green result */
+            border: 1px solid #a3e4d7;
+            border-radius: 6px;
+            min-height: 30px;
+            text-align: center;
+        }
+        .result-area p {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #16a085; /* Green result */
+        }
+         .result-area .label {
+            font-weight: normal;
+            color: #555;
+            font-size: 1em;
+            display: block;
+            margin-bottom: 5px;
+         }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🚂 火车过山洞问题 ⛰️</h1>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label for="speed-input">火车速度 <span class="unit">(米/秒)</span>:</label>
+                <input type="number" id="speed-input" placeholder="例如：20" min="0.1" step="any">
+                <div id="speed-error" class="error-message"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="time-input">过洞时间 <span class="unit">(秒)</span>:</label>
+                <input type="number" id="time-input" placeholder="例如：30" min="0.1" step="any">
+                <div id="time-error" class="error-message"></div>
+            </div>
+
+             <div class="input-group">
+                <label for="train-length-input">火车长度 <span class="unit">(米)</span>:</label>
+                <input type="number" id="train-length-input" placeholder="例如：100" min="1">
+                <div id="train-length-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <button id="calculate-button">计算山洞长度</button>
+
+        <div class="result-area">
+            <p id="result-output"><span class="label">山洞长度将显示在这里</span></p>
+        </div>
+    </div>
+
+    <!-- Visualization Area -->
+    <div class="visualization-area" id="visualization-section" style="display: none;">
+        <h4>过程可视化</h4>
+        <div id="tunnel-visualization">
+            <div id="tunnel-element" class="tunnel">山洞</div>
+            <div id="train-element" class="train">火车</div>
+            <!-- Distance markers will be added here -->
+        </div>
+         <p style="font-size: 0.85em; color: #555; text-align: center; margin-top: 15px;">
+            (可视化按比例显示，点击按钮后火车将模拟通过山洞)
+        </p>
+    </div>
+
+    <!-- Calculation Steps Area -->
+    <div class="calculation-area" id="calculation-section" style="display: none;">
+        <h4>解题思路与计算过程</h4>
+        <div id="calculation-steps">
+            <!-- Calculation steps will be generated here -->
+        </div>
+    </div>
+
+
+    <script>
+        // Get DOM elements
+        const speedInput = document.getElementById('speed-input');
+        const timeInput = document.getElementById('time-input');
+        const trainLengthInput = document.getElementById('train-length-input');
+        const calculateButton = document.getElementById('calculate-button');
+        const resultOutput = document.getElementById('result-output');
+        const speedError = document.getElementById('speed-error');
+        const timeError = document.getElementById('time-error');
+        const trainLengthError = document.getElementById('train-length-error');
+
+        const visualizationSection = document.getElementById('visualization-section');
+        const tunnelVisualization = document.getElementById('tunnel-visualization');
+        const tunnelElement = document.getElementById('tunnel-element');
+        const trainElement = document.getElementById('train-element');
+
+        const calculationSection = document.getElementById('calculation-section');
+        const calculationSteps = document.getElementById('calculation-steps');
+
+        let animationTimeout = null; // To control animation
+
+        // Function to validate inputs
+        function validateInputs() {
+            speedError.textContent = '';
+            timeError.textContent = '';
+            trainLengthError.textContent = '';
+            let isValid = true;
+
+            const speed = parseFloat(speedInput.value);
+            const time = parseFloat(timeInput.value);
+            const trainLength = parseFloat(trainLengthInput.value);
+
+            if (isNaN(speed) || speed <= 0) {
+                speedError.textContent = '请输入有效的正数速度。';
+                isValid = false;
+            }
+            if (isNaN(time) || time <= 0) {
+                timeError.textContent = '请输入有效的正数时间。';
+                isValid = false;
+            }
+             if (isNaN(trainLength) || trainLength < 0) { // Allow 0 length for theoretical cases? No, require positive.
+                 trainLengthError.textContent = '请输入有效的正数火车长度。';
+                 isValid = false;
+             } else if (!Number.isInteger(trainLength) && trainLengthInput.value.includes('.')) {
+                 // Allow integer input for train length as it's usually whole meters
+                 // trainLengthError.textContent = '火车长度通常为整数米。';
+                 // isValid = false; // Decide if you want to enforce integer
+             }
+
+
+            return isValid ? { speed, time, trainLength } : null;
+        }
+
+        // Function to display calculation steps
+        function displayCalculationSteps(speed, time, trainLength, totalDistance, tunnelLength) {
+            calculationSteps.innerHTML = ''; // Clear previous steps
+            let stepsHtml = `
+                <p><strong>问题分析：</strong>火车“完全通过”山洞，意味着从火车头进入山洞开始，直到火车尾离开山洞结束。</p>
+                <p class="important"><strong>关键点：</strong>在这段时间内，火车行驶的总距离 <strong>不仅仅是</strong> 山洞的长度，而是 <strong>山洞长度 + 火车自身的长度</strong>！</p>
+                <p class="formula">总距离 = 速度 × 时间</p>
+                <p>代入数值：总距离 = ${speed} <span class="unit">米/秒</span> × ${time} <span class="unit">秒</span></p>
+                <p>计算结果：总距离 = <strong>${totalDistance.toFixed(2)}</strong> <span class="unit">米</span></p>
+                <p>这个总距离是火车从“头进”到“尾出”走过的路程。</p>
+                <p class="formula">总距离 = 山洞长度 + 火车长度</p>
+                <p>所以，我们可以反过来计算山洞长度：</p>
+                <p class="formula">山洞长度 = 总距离 - 火车长度</p>
+                <p>代入数值：山洞长度 = ${totalDistance.toFixed(2)} <span class="unit">米</span> - ${trainLength} <span class="unit">米</span></p>
+                <p>计算结果：山洞长度 = <strong>${tunnelLength.toFixed(2)}</strong> <span class="unit">米</span></p>
+                <p class="mistake"><strong>易错点提醒：</strong>如果直接用 速度 × 时间 来计算山洞长度（${(speed * time).toFixed(2)} 米），就忘记减去火车的长度了！这是常见的错误哦！</p>
+            `;
+            calculationSteps.innerHTML = stepsHtml;
+            calculationSection.style.display = 'block'; // Show the section
+        }
+
+        // Function to setup and run visualization
+        function runVisualization(speed, time, trainLength, tunnelLength) {
+            visualizationSection.style.display = 'block'; // Show the section
+            clearTimeout(animationTimeout); // Clear previous animation if any
+
+            const vizWidth = tunnelVisualization.clientWidth; // Get width of the container
+            if (vizWidth <= 0) return; // Don't run if container not visible/sized
+
+            // --- Scaling ---
+            // Decide on a scale factor (pixels per meter)
+            // Make the total distance (tunnel + train) fit reasonably well
+            const totalDistance = tunnelLength + trainLength;
+            let scale = vizWidth * 0.8 / totalDistance; // Try to fit 80% of the width
+
+            // Limit scale to prevent elements becoming too small or too large
+            scale = Math.min(scale, 5); // Max scale
+            scale = Math.max(scale, 0.5); // Min scale
+
+            const trainWidthPx = Math.max(15, trainLength * scale); // Min width for visibility
+            const tunnelWidthPx = Math.max(20, tunnelLength * scale); // Min width for visibility
+            const totalDistancePx = trainWidthPx + tunnelWidthPx;
+
+            // --- Positioning ---
+            // Center the tunnel roughly if possible, leave space for train entry/exit
+            const tunnelMargin = (vizWidth - tunnelWidthPx) / 2;
+            const tunnelLeftPx = Math.max(trainWidthPx * 0.5, tunnelMargin); // Ensure some space left
+
+            tunnelElement.style.width = `${tunnelWidthPx}px`;
+            tunnelElement.style.left = `${tunnelLeftPx}px`;
+            tunnelElement.textContent = `山洞 (${tunnelLength.toFixed(0)}m)`;
+
+            trainElement.style.width = `${trainWidthPx}px`;
+            trainElement.textContent = `火车 (${trainLength}m)`;
+
+            // --- Animation ---
+            // Start position: Train nose just about to enter tunnel
+            const startLeftPx = tunnelLeftPx - trainWidthPx;
+            // End position: Train tail just leaving the tunnel
+            const endLeftPx = tunnelLeftPx + tunnelWidthPx;
+
+            // Reset train position instantly
+            trainElement.style.transition = 'none';
+            trainElement.style.left = `${startLeftPx}px`;
+
+            // Force reflow to apply the initial position before starting transition
+            void trainElement.offsetWidth;
+
+            // Calculate animation duration based on the *scaled* time
+            // The visual time should match the input time for clarity
+            const animationDuration = time; // Use the actual time input for duration
+
+            // Start the animation
+            trainElement.style.transition = `left ${animationDuration}s linear`;
+            trainElement.style.left = `${endLeftPx}px`;
+
+            // Optional: Reset after animation (add a delay)
+            animationTimeout = setTimeout(() => {
+                 trainElement.style.transition = 'none';
+                 trainElement.style.left = `${startLeftPx}px`; // Reset to start
+            }, (animationDuration + 1) * 1000); // Reset 1 second after animation ends
+
+            // --- Add Distance Markers (Optional) ---
+            // Clear previous markers
+            tunnelVisualization.querySelectorAll('.distance-marker, .distance-label').forEach(el => el.remove());
+
+            // Marker for total distance
+            const markerTotal = document.createElement('div');
+            markerTotal.className = 'distance-marker';
+            markerTotal.style.left = `${startLeftPx + trainWidthPx}px`; // Start of total distance (train nose enters)
+            markerTotal.style.width = `${totalDistancePx}px`; // Width is total distance
+            markerTotal.style.top = '10px';
+            markerTotal.style.borderBottom = '1px solid #3498db';
+
+            const labelTotal = document.createElement('div');
+            labelTotal.className = 'distance-label';
+            labelTotal.style.left = `${startLeftPx + trainWidthPx + totalDistancePx / 2}px`;
+            labelTotal.style.top = '0px';
+            labelTotal.textContent = `总路程: ${totalDistance.toFixed(0)}m (山洞+火车)`;
+
+            tunnelVisualization.appendChild(markerTotal);
+            tunnelVisualization.appendChild(labelTotal);
+        }
+
+
+        // Main calculation function
+        function calculateTunnelLength() {
+            // 1. Validate Inputs
+            const inputs = validateInputs();
+            if (!inputs) {
+                // Hide results and visualization if validation fails
+                resultOutput.innerHTML = '<span class="label">山洞长度将显示在这里</span>';
+                visualizationSection.style.display = 'none';
+                calculationSection.style.display = 'none';
+                clearTimeout(animationTimeout); // Stop any ongoing animation
+                trainElement.style.transition = 'none'; // Stop movement
+                return;
+            }
+
+            const { speed, time, trainLength } = inputs;
+
+            // 2. Calculate Total Distance traveled by the train head
+            const totalDistance = speed * time;
+
+            // 3. Calculate Tunnel Length
+            const tunnelLength = totalDistance - trainLength;
+
+            // 4. Display Result
+            if (tunnelLength < 0) {
+                 resultOutput.innerHTML = `<span class="label" style="color: #e74c3c;">计算错误!</span> 火车长度 (${trainLength}m) 大于总路程 (${totalDistance.toFixed(1)}m)。请检查输入值。`;
+                 visualizationSection.style.display = 'none';
+                 calculationSection.style.display = 'none';
+                 clearTimeout(animationTimeout);
+                 trainElement.style.transition = 'none';
+            } else {
+                resultOutput.innerHTML = `<span class="label">计算得出山洞长度为：</span>${tunnelLength.toFixed(2)} <span class="unit">米</span>`;
+
+                // 5. Display Steps
+                displayCalculationSteps(speed, time, trainLength, totalDistance, tunnelLength);
+
+                // 6. Run Visualization
+                runVisualization(speed, time, trainLength, tunnelLength);
+            }
+        }
+
+        // Add event listener to the button
+        calculateButton.addEventListener('click', calculateTunnelLength);
+
+        // Optional: Calculate on Enter key press
+        speedInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') calculateTunnelLength(); });
+        timeInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') calculateTunnelLength(); });
+        trainLengthInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') calculateTunnelLength(); });
+
+    </script>
+
+</body>
+</html>
