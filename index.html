@@ -1,1 +1,84 @@
+<!-- index.html - 教学课件导航主页 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>交互式教学课件导航</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 30px 15px;
+    }
+    h1 {
+      text-align: center;
+      color: #0056b3;
+    }
+    .section {
+      margin-top: 40px;
+    }
+    .section h2 {
+      color: #007bff;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    li {
+      background: #fff;
+      margin: 10px 0;
+      padding: 12px 16px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      transition: background 0.3s;
+    }
+    li:hover {
+      background: #e6f0ff;
+    }
+    a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>交互式教学课件导航</h1>
+
+    <div class="section">
+      <h2>📘 数学</h2>
+      <ul>
+        <li><a href="math/sjx.html">Lesson 1：三角形内角和</a></li>
+        <li><a href="math/matrix.html">Lesson 2：矩阵外圈人数计算</a></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>🔬 物理</h2>
+      <ul>
+        <li><a href="physics/牛顿第二定律.html">Lesson 1：牛顿第二定律</a></li>
+        <li><a href="physics/train.html">Lesson 2：火车过山洞</a></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>⚗️ 化学</h2>
+      <ul>
+        <li><a href="chemistry/reaction1.html">反应速率模拟</a></li>
+        <li><a href="chemistry/reaction2.html">电解水实验可视化</a></li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
 
