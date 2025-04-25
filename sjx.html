@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式三角形几何浏览器</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f7f6;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            width: 90%;
+        }
+        h1 {
+            color: #0056b3; /* 深蓝色标题 */
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #007bff; /* 蓝色副标题 */
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .formula {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 1.1em;
+            text-align: center;
+            margin: 15px 0;
+            color: #333;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .control-group label {
+            min-width: 70px; /* 保持标签宽度一致 */
+            color: #333;
+            font-weight: bold;
+        }
+        .control-group input[type="range"] {
+            flex-grow: 1;
+            margin: 0 10px;
+            cursor: pointer;
+            accent-color: #007bff; /* 改变滑块颜色 */
+        }
+        .control-group span {
+            min-width: 40px; /* 保证数值显示宽度 */
+            text-align: right;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        .visualization {
+            width: 100%;
+            height: 300px; /* 固定高度 */
+            border: 1px solid #ccc;
+            background-color: #f8f9fa; /* 浅灰色背景 */
+            margin-top: 20px;
+            position: relative; /* 用于定位文字 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* 防止图形超出边界 */
+        }
+        #triangle-svg {
+            width: 100%;
+            height: 100%;
+        }
+        #triangle-polygon {
+            stroke: #0056b3; /* 三角形边框颜色 */
+            stroke-width: 2;
+            fill: rgba(0, 123, 255, 0.1); /* 三角形填充色 */
+        }
+        .angle-label {
+            font-size: 12px;
+            fill: #333; /* 角度标签颜色 */
+            text-anchor: middle; /* 文本居中对齐 */
+        }
+        .summary {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #28a745; /* 绿色表示正确 */
+            text-align: center;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>交互式三角形几何浏览器</h1>
+
+        <h2>三角形内角和定理</h2>
+        <p>三角形内角和定理指出：任何三角形的三个内角之和总是等于 180 度。</p>
+        <div class="formula">
+            角 A + 角 B + 角 C = 180°
+        </div>
+        <p>使用下面的滑动条来改变角 A、角 B 和角 C 的值。当您调整一个角时，其他两个角会自动调整以保持内角和为 180°。可视化图形将实时更新以显示三角形形状的变化。</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="angleA">角 A:</label>
+                <input type="range" id="angleA" name="angleA" min="1" max="178" value="60">
+                <span id="valueA">60°</span>
+            </div>
+            <div class="control-group">
+                <label for="angleB">角 B:</label>
+                <input type="range" id="angleB" name="angleB" min="1" max="178" value="60">
+                <span id="valueB">60°</span>
+            </div>
+            <div class="control-group">
+                <label for="angleC">角 C:</label>
+                <input type="range" id="angleC" name="angleC" min="1" max="178" value="60">
+                <span id="valueC">60°</span>
+            </div>
+        </div>
+
+        <div class="visualization">
+            <svg id="triangle-svg" viewBox="0 0 300 300">
+                <!-- 三角形将在这里绘制 -->
+                <polygon id="triangle-polygon" points="50,250 250,250 150,50" />
+                <!-- 角度标签 -->
+                <text id="labelA" x="50" y="250" class="angle-label" dx="10" dy="-5">A (60°)</text>
+                <text id="labelB" x="250" y="250" class="angle-label" dx="-15" dy="-5">B (60°)</text>
+                <text id="labelC" x="150" y="50" class="angle-label" dx="0" dy="-5">C (60°)</text>
+            </svg>
+        </div>
+
+        <div class="summary" id="summary">
+            内角和: 60° + 60° + 60° = 180°
+        </div>
+    </div>
+
+    <script>
+        // 获取 DOM 元素
+        const sliderA = document.getElementById('angleA');
+        const sliderB = document.getElementById('angleB');
+        const sliderC = document.getElementById('angleC');
+        const valueA = document.getElementById('valueA');
+        const valueB = document.getElementById('valueB');
+        const valueC = document.getElementById('valueC');
+        const summary = document.getElementById('summary');
+        const trianglePolygon = document.getElementById('triangle-polygon');
+        const svg = document.getElementById('triangle-svg');
+        const labelA = document.getElementById('labelA');
+        const labelB = document.getElementById('labelB');
+        const labelC = document.getElementById('labelC');
+
+        // 最小/最大角度值
+        const MIN_ANGLE = 1;
+        const MAX_ANGLE = 178; // 避免退化成直线
+
+        // 存储当前角度值 (浮点数以提高精度)
+        let angles = { a: 60.0, b: 60.0, c: 60.0 };
+
+        // 标志位，防止更新循环
+        let isUpdating = false;
+
+        // 更新角度和UI的函数
+        function updateAngles(changedSliderId) {
+            if (isUpdating) return; // 如果正在更新，则退出以防止循环
+            isUpdating = true; // 设置更新标志
+
+            // 从滑动条读取当前值（可能被用户改变）
+            let currentA = parseFloat(sliderA.value);
+            let currentB = parseFloat(sliderB.value);
+            let currentC = parseFloat(sliderC.value);
+
+            let delta = 0; // 角度变化量
+            let total = 180.0;
+
+            // 根据哪个滑动条被改变来调整其他两个
+            if (changedSliderId === 'angleA') {
+                delta = currentA - angles.a; // A的变化量
+                // 按比例分配变化量给 B 和 C
+                let ratioB = angles.b / (angles.b + angles.c);
+                let ratioC = 1 - ratioB;
+
+                // 尝试分配
+                let newB = angles.b - delta * ratioB;
+                let newC = angles.c - delta * ratioC;
+
+                // 检查边界并调整
+                newB = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newB));
+                newC = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newC));
+
+                // 重新计算 A 以确保总和为 180
+                currentA = total - newB - newC;
+                currentA = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, currentA)); // 再次约束A
+
+                // 如果调整后 A 变化了，需要重新调整 B 和 C
+                newB = total - currentA - newC;
+                newB = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newB));
+                newC = total - currentA - newB; // 最终确定 C
+                newC = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newC));
+
+
+            } else if (changedSliderId === 'angleB') {
+                delta = currentB - angles.b; // B的变化量
+                let ratioA = angles.a / (angles.a + angles.c);
+                let ratioC = 1 - ratioA;
+
+                let newA = angles.a - delta * ratioA;
+                let newC = angles.c - delta * ratioC;
+
+                newA = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newA));
+                newC = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newC));
+
+                currentB = total - newA - newC;
+                currentB = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, currentB));
+
+                newA = total - currentB - newC;
+                newA = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newA));
+                newC = total - currentB - newA;
+                newC = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newC));
+
+                currentA = newA; // 更新 currentA 供后续使用
+
+            } else { // angleC changed
+                delta = currentC - angles.c; // C的变化量
+                let ratioA = angles.a / (angles.a + angles.b);
+                let ratioB = 1 - ratioA;
+
+                let newA = angles.a - delta * ratioA;
+                let newB = angles.b - delta * ratioB;
+
+                newA = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newA));
+                newB = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newB));
+
+                currentC = total - newA - newB;
+                currentC = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, currentC));
+
+                newA = total - currentC - newB;
+                newA = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newA));
+                newB = total - currentC - newA;
+                newB = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newB));
+
+                currentA = newA; // 更新 currentA
+                currentB = newB; // 更新 currentB
+            }
+
+            // 最终确保总和接近 180 (处理浮点误差)
+            let finalSum = currentA + currentB + currentC;
+            let error = 180.0 - finalSum;
+            // 将误差加到最大的角上（或平均分配，这里加到A上）
+            currentA += error;
+             // 再次检查边界
+            currentA = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, currentA));
+            currentB = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, currentB));
+            currentC = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, currentC));
+            // 可能需要重新分配以确保总和精确为180，但对于显示来说，微小误差通常可接受
+            // 简单修复：强制最后一个角等于 180 - 其他两个
+            currentC = 180.0 - currentA - currentB;
+
+
+            // 更新内部存储的角度值
+            angles.a = currentA;
+            angles.b = currentB;
+            angles.c = currentC;
+
+            // 更新滑动条的值 (取整)
+            sliderA.value = Math.round(angles.a);
+            sliderB.value = Math.round(angles.b);
+            sliderC.value = Math.round(angles.c);
+
+            // 更新显示的数值 (取整)
+            const roundedA = Math.round(angles.a);
+            const roundedB = Math.round(angles.b);
+            const roundedC = Math.round(angles.c);
+            valueA.textContent = `${roundedA}°`;
+            valueB.textContent = `${roundedB}°`;
+            valueC.textContent = `${roundedC}°`;
+
+            // 更新总结信息
+            const finalRoundedSum = roundedA + roundedB + roundedC;
+            summary.textContent = `内角和: ${roundedA}° + ${roundedB}° + ${roundedC}° = ${finalRoundedSum}°`;
+            summary.style.color = (finalRoundedSum === 180) ? '#28a745' : '#dc3545'; // 绿色或红色
+
+            // 更新三角形可视化
+            drawTriangle(angles.a, angles.b, angles.c);
+
+            isUpdating = false; // 清除更新标志
+        }
+
+        // 绘制三角形的函数
+        function drawTriangle(angleA_deg, angleB_deg, angleC_deg) {
+            const svgWidth = 300;
+            const svgHeight = 300;
+            const padding = 30; // 内边距，防止顶点贴边
+
+            // 将角度转换为弧度
+            const angleA_rad = angleA_deg * Math.PI / 180;
+            const angleB_rad = angleB_deg * Math.PI / 180;
+            const angleC_rad = angleC_deg * Math.PI / 180;
+
+            // 固定底边 AB 的长度，并使其居中
+            const baseLength = Math.min(svgWidth, svgHeight) - 2 * padding - 50; // 基础长度，减去边距
+            const Ax = (svgWidth - baseLength) / 2;
+            const Ay = svgHeight - padding; // A点在底部靠左
+            const Bx = Ax + baseLength;
+            const By = Ay; // B点在底部靠右
+
+            // 使用正弦定理计算边长 AC (b)
+            // a/sinA = b/sinB = c/sinC. 这里 c = baseLength
+            // b = c * sinB / sinC
+            const side_b = baseLength * Math.sin(angleB_rad) / Math.sin(angleC_rad);
+
+            // 计算顶点 C 的坐标
+            // C 相对于 A 的坐标是 (b * cosA, -b * sinA) (y轴向下为正，所以用负号)
+            const Cx = Ax + side_b * Math.cos(angleA_rad);
+            const Cy = Ay - side_b * Math.sin(angleA_rad);
+
+            // 更新多边形的点
+            const points = `${Ax},${Ay} ${Bx},${By} ${Cx},${Cy}`;
+            trianglePolygon.setAttribute('points', points);
+
+            // 更新角度标签位置和内容 (稍微偏移顶点)
+            const labelOffset = 15; // 标签距离顶点的距离
+            labelA.setAttribute('x', Ax + labelOffset * Math.cos(angleA_rad / 2));
+            labelA.setAttribute('y', Ay - labelOffset * Math.sin(angleA_rad / 2));
+            labelA.textContent = `A (${Math.round(angleA_deg)}°)`;
+
+            labelB.setAttribute('x', Bx - labelOffset * Math.cos(angleB_rad / 2));
+            labelB.setAttribute('y', By - labelOffset * Math.sin(angleB_rad / 2));
+            labelB.textContent = `B (${Math.round(angleB_deg)}°)`;
+
+            // 计算 C 点标签位置 (基于角平分线方向的反方向)
+            // 需要顶点 C 处的两条边的向量来计算角平分线
+            const vecCA_x = Ax - Cx;
+            const vecCA_y = Ay - Cy;
+            const vecCB_x = Bx - Cx;
+            const vecCB_y = By - Cy;
+            // 归一化向量
+            const magCA = Math.sqrt(vecCA_x**2 + vecCA_y**2);
+            const magCB = Math.sqrt(vecCB_x**2 + vecCB_y**2);
+            const normCA_x = vecCA_x / magCA;
+            const normCA_y = vecCA_y / magCA;
+            const normCB_x = vecCB_x / magCB;
+            const normCB_y = vecCB_y / magCB;
+            // 角平分线方向向量 (归一化向量之和)
+            const bisector_x = normCA_x + normCB_x;
+            const bisector_y = normCA_y + normCB_y;
+            // 归一化角平分线向量
+            const magBisector = Math.sqrt(bisector_x**2 + bisector_y**2);
+            const normBisector_x = bisector_x / magBisector;
+            const normBisector_y = bisector_y / magBisector;
+
+            // 标签放在角平分线的反方向（向外）
+            labelC.setAttribute('x', Cx - normBisector_x * labelOffset);
+            labelC.setAttribute('y', Cy - normBisector_y * labelOffset);
+            labelC.textContent = `C (${Math.round(angleC_deg)}°)`;
+        }
+
+        // 添加事件监听器
+        sliderA.addEventListener('input', () => updateAngles('angleA'));
+        sliderB.addEventListener('input', () => updateAngles('angleB'));
+        sliderC.addEventListener('input', () => updateAngles('angleC'));
+
+        // 初始化页面
+        updateAngles(); // 使用初始值调用一次以绘制初始状态
+
+    </script>
+</body>
+</html>
