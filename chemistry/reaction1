@@ -1,1 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>化学反应速率模拟 (A → B)</title>
+    <!-- Bootstrap CSS for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js for plotting -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            padding-top: 1rem;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 900px;
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background-color: #eef2f7;
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 40vh; /* Adjust height as needed */
+            width: 100%;
+        }
+        label {
+            font-weight: 500;
+        }
+        h1, h2 {
+            color: #0056b3; /* A blue theme */
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        h2 {
+            margin-top: 2rem;
+        }
+        .param-display {
+            font-style: italic;
+            color: #555;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        /* Custom button style */
+        .btn-simulate {
+             background-color: #007bff;
+             border-color: #007bff;
+             transition: background-color 0.2s ease;
+        }
+        .btn-simulate:hover {
+             background-color: #0056b3;
+             border-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>化学反应速率模拟</h1>
+        <p class="text-center text-muted">模拟一个简单的一级不可逆反应: A → B</p>
+        <p class="text-center">反应速率方程: Rate = k[A]</p>
 
+        <div class="controls">
+            <h2>参数设置</h2>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="initialA" class="form-label">初始浓度 [A]₀ (M):</label>
+                    <input type="number" class="form-control" id="initialA" value="1.0" min="0.01" step="0.1">
+                </div>
+                <div class="col-md-5">
+                    <label for="rateConstant" class="form-label">速率常数 k (s⁻¹):</label>
+                    <input type="number" class="form-control" id="rateConstant" value="0.1" min="0.001" step="0.01">
+                </div>
+                <div class="col-md-2">
+                    <button id="simulateBtn" class="btn btn-simulate text-white w-100">运行模拟</button>
+                </div>
+            </div>
+            <div id="paramDisplay" class="param-display">
+                当前参数: [A]₀ = 1.0 M, k = 0.1 s⁻¹
+            </div>
+        </div>
+
+        <h2>模拟结果</h2>
+        <div class="chart-container">
+            <canvas id="reactionChart"></canvas>
+        </div>
+         <div class="mt-3">
+            <h3>说明</h3>
+            <ul>
+                <li>该模拟演示了一个简单的一级反应（A转化为B）。</li>
+                <li>反应速率与反应物A的浓度成正比。</li>
+                <li>图表显示了反应物A和产物B的浓度随时间的变化。</li>
+                <li>您可以调整初始浓度[A]₀和速率常数k来观察它们对反应进程的影响。</li>
+                <li>**速率常数 (k)** 通常受温度影响（温度越高，k越大），这里我们直接设置k值。</li>
+                <li>**浓度 ([A]₀)** 越高，初始反应速率越快。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Simulation and Charting JavaScript -->
+    <script>
+        const initialAInput = document.getElementById('initialA');
+        const rateConstantInput = document.getElementById('rateConstant');
+        const simulateBtn = document.getElementById('simulateBtn');
+        const paramDisplay = document.getElementById('paramDisplay');
+        const ctx = document.getElementById('reactionChart').getContext('2d');
+
+        let reactionChart = null; // Variable to hold the chart instance
+
+        // Function to run the simulation and update the chart
+        function runSimulation() {
+            const A0 = parseFloat(initialAInput.value);
+            const k = parseFloat(rateConstantInput.value);
+
+            // Basic input validation
+            if (isNaN(A0) || A0 <= 0 || isNaN(k) || k <= 0) {
+                alert("请输入有效的正数作为初始浓度和速率常数！");
+                return;
+            }
+
+             // Update parameter display
+            paramDisplay.textContent = `当前参数: [A]₀ = ${A0.toFixed(2)} M, k = ${k.toFixed(3)} s⁻¹`;
+
+            // Simulation parameters
+            const timeSteps = 50; // Number of points to plot
+            // Determine total time based on rate constant (e.g., time to reach ~95% completion for first order is roughly 3/k)
+            const totalTime = Math.max(10, 5 / k); // Ensure a minimum time, extend based on k
+            const dt = totalTime / timeSteps;
+
+            const timeData = [];
+            const concentrationA = [];
+            const concentrationB = [];
+
+            // Calculate concentrations over time using the integrated rate law for first-order reaction
+            for (let i = 0; i <= timeSteps; i++) {
+                const t = i * dt;
+                const At = A0 * Math.exp(-k * t); // [A]t = [A]0 * e^(-kt)
+                const Bt = A0 - At;             // [B]t = [A]0 - [A]t
+
+                timeData.push(t.toFixed(2)); // Store time with 2 decimal places
+                concentrationA.push(At);
+                concentrationB.push(Bt);
+            }
+
+            // Chart.js configuration
+            const chartData = {
+                labels: timeData,
+                datasets: [
+                    {
+                        label: '反应物 [A]',
+                        data: concentrationA,
+                        borderColor: 'rgb(255, 99, 132)', // Red for reactant
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.1, // Makes the line slightly curved
+                        fill: false, // Don't fill area under the line
+                        pointRadius: 2, // Smaller points
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: '产物 [B]',
+                        data: concentrationB,
+                        borderColor: 'rgb(54, 162, 235)', // Blue for product
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.1,
+                        fill: false,
+                        pointRadius: 2,
+                        pointHoverRadius: 5
+                    }
+                ]
+            };
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false, // Allow chart to fit container height
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间 (s)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '浓度 (M)'
+                        },
+                        beginAtZero: true, // Start y-axis at 0
+                        suggestedMax: A0 * 1.1 // Set max slightly above initial A
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '浓度随时间变化图'
+                    },
+                    tooltip: {
+                        mode: 'index', // Show tooltips for both lines at the same x-index
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    // Format concentration to reasonable precision
+                                    label += context.parsed.y.toFixed(3) + ' M';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                interaction: { // Improve hover interaction
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            };
+
+            // If chart exists, update it; otherwise, create it
+            if (reactionChart) {
+                reactionChart.data = chartData;
+                reactionChart.options = chartOptions; // Update options in case A0 changed max scale
+                reactionChart.update();
+                console.log("Chart updated.");
+            } else {
+                reactionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: chartOptions
+                });
+                console.log("Chart created.");
+            }
+        }
+
+        // Add event listener to the button
+        simulateBtn.addEventListener('click', runSimulation);
+
+        // Run simulation once on page load with default values
+        window.addEventListener('load', runSimulation);
+
+    </script>
+
+</body>
+</html>
