@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>矩阵外圈人数计算器 (含可视化)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', '微软雅黑', sans-serif;
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f4f8; /* Lighter background */
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .calculator-container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px; /* Softer radius */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            width: 95%;
+            max-width: 550px; /* Wider container */
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50; /* Darker blue-gray */
+            margin-bottom: 30px;
+            font-size: 1.6em;
+            font-weight: 600;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 20px; /* Space between inputs */
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            flex: 1; /* Each group takes equal space */
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        .input-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da; /* Lighter border */
+            border-radius: 6px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .input-group input[type="number"]::-webkit-outer-spin-button,
+        .input-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        .input-group input[type="number"] { -moz-appearance: textfield; }
+        .input-group input[type="number"]:focus {
+            outline: none;
+            border-color: #4a90e2; /* Accent color */
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+        }
+
+        button#calculate-button { /* Specific ID for button */
+            background-color: #4a90e2; /* Accent color */
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 10px;
+            width: 100%;
+            font-weight: 500;
+        }
+        button#calculate-button:hover {
+            background-color: #357abd; /* Darker accent */
+        }
+
+        .error-message {
+            color: #e74c3c; /* Error color */
+            font-size: 0.85em;
+            margin-top: 5px;
+            min-height: 1.1em;
+            text-align: left;
+        }
+
+        /* --- Visualization Area --- */
+        .visualization-area, .calculation-area {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            width: 95%;
+            max-width: 550px;
+            margin-bottom: 20px;
+        }
+        .visualization-area h4, .calculation-area h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #34495e; /* Slightly darker heading */
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid #ecf0f1; /* Light separator */
+            padding-bottom: 10px;
+        }
+
+        #matrix-visualization {
+            display: grid; /* Use CSS Grid */
+            gap: 4px; /* Space between people */
+            margin: 15px auto; /* Center the grid */
+            justify-content: center; /* Center grid items if grid is wider */
+            overflow: auto; /* Add scrollbars if too large */
+            max-width: 100%;
+            max-height: 300px; /* Limit height */
+            padding: 5px;
+            border: 1px solid #eee;
+            background-color: #fdfdfd;
+            border-radius: 4px;
+        }
+
+        .person {
+            width: 20px;
+            height: 20px;
+            background-color: #bdc3c7; /* Default person color (gray) */
+            border-radius: 50%; /* Make them circles */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.7em;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .perimeter-person {
+            background-color: #e74c3c; /* Highlight perimeter (red) */
+            /* border: 1px solid #c0392b; */
+        }
+
+        /* --- Calculation Steps Area --- */
+        #calculation-steps {
+            text-align: left;
+            font-size: 0.95em;
+            line-height: 1.7;
+            color: #333;
+        }
+        #calculation-steps p {
+            margin: 8px 0;
+            padding: 5px;
+            border-radius: 4px;
+        }
+         #calculation-steps p.formula {
+            background-color: #ecf0f1; /* Light background for formula */
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 500;
+         }
+         #calculation-steps p.step {
+             padding-left: 15px; /* Indent steps */
+             position: relative;
+         }
+         #calculation-steps p.step::before {
+             content: "→";
+             position: absolute;
+             left: 0;
+             color: #4a90e2;
+             font-weight: bold;
+         }
+
+
+        /* --- Result Area --- */
+        .result-area {
+            margin-top: 0; /* Removed top margin as it's inside container now */
+            padding: 15px;
+            background-color: #eaf0ff; /* Light blue result */
+            border: 1px solid #c4d7ff;
+            border-radius: 6px;
+            min-height: 30px;
+            text-align: center;
+        }
+        .result-area p {
+            margin: 0;
+            font-size: 1.2em; /* Larger result */
+            font-weight: 700; /* Bolder result */
+            color: #357abd; /* Darker blue result */
+        }
+         .result-area .label {
+            font-weight: normal;
+            color: #555;
+            font-size: 1em;
+            display: block; /* Put label on its own line */
+            margin-bottom: 5px;
+         }
+
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <h1>矩阵外圈人数计算器</h1>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label for="rows-input">矩阵行数 (Rows):</label>
+                <input type="number" id="rows-input" placeholder="例如：8" min="1">
+                <div id="rows-error" class="error-message"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="cols-input">矩阵列数 (Columns):</label>
+                <input type="number" id="cols-input" placeholder="例如：5" min="1">
+                <div id="cols-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <button id="calculate-button">计算并可视化</button>
+
+        <div class="result-area">
+            <p id="result-output"><span class="label">结果将显示在这里</span></p>
+        </div>
+    </div>
+
+    <!-- Visualization Area -->
+    <div class="visualization-area" id="visualization-section" style="display: none;"> <!-- Initially hidden -->
+        <h4>矩阵可视化</h4>
+        <div id="matrix-visualization">
+            <!-- Matrix grid will be generated here -->
+        </div>
+         <p style="font-size: 0.8em; color: #7f8c8d; text-align: center; margin-top: 10px;">
+            <span style="display: inline-block; width: 12px; height: 12px; background-color: #e74c3c; border-radius: 50%; margin-right: 5px; vertical-align: middle;"></span> = 外圈人员
+            <span style="display: inline-block; width: 12px; height: 12px; background-color: #bdc3c7; border-radius: 50%; margin-left: 15px; margin-right: 5px; vertical-align: middle;"></span> = 内部人员
+        </p>
+         <p id="visualization-warning" style="font-size: 0.8em; color: #f39c12; text-align: center; margin-top: 5px; display: none;">
+            注意：矩阵过大，可视化可能不完整或影响性能。
+        </p>
+    </div>
+
+    <!-- Calculation Steps Area -->
+    <div class="calculation-area" id="calculation-section" style="display: none;"> <!-- Initially hidden -->
+        <h4>计算过程</h4>
+        <div id="calculation-steps">
+            <!-- Calculation steps will be generated here -->
+        </div>
+    </div>
+
+
+    <script>
+        // Get DOM elements
+        const rowsInput = document.getElementById('rows-input');
+        const colsInput = document.getElementById('cols-input');
+        const calculateButton = document.getElementById('calculate-button');
+        const resultOutput = document.getElementById('result-output');
+        const rowsError = document.getElementById('rows-error');
+        const colsError = document.getElementById('cols-error');
+        const visualizationSection = document.getElementById('visualization-section');
+        const matrixVisualization = document.getElementById('matrix-visualization');
+        const visualizationWarning = document.getElementById('visualization-warning');
+        const calculationSection = document.getElementById('calculation-section');
+        const calculationSteps = document.getElementById('calculation-steps');
+
+        const MAX_DISPLAY_ROWS = 30; // Limit visualization size
+        const MAX_DISPLAY_COLS = 30;
+
+        // Function to render the matrix visualization
+        function renderMatrix(rows, cols) {
+            matrixVisualization.innerHTML = ''; // Clear previous grid
+            visualizationWarning.style.display = 'none'; // Hide warning initially
+
+            // Limit displayed size for performance/layout
+            let displayRows = rows;
+            let displayCols = cols;
+            if (rows > MAX_DISPLAY_ROWS || cols > MAX_DISPLAY_COLS) {
+                visualizationWarning.style.display = 'block';
+                // Optionally cap the display size, but calculate based on actual input
+                // displayRows = Math.min(rows, MAX_DISPLAY_ROWS);
+                // displayCols = Math.min(cols, MAX_DISPLAY_COLS);
+            }
+
+            // Adjust person size for larger grids (optional)
+            let personSize = 20;
+            if (rows > 15 || cols > 15) personSize = 15;
+            if (rows > 25 || cols > 25) personSize = 12;
+
+            matrixVisualization.style.gridTemplateRows = `repeat(${rows}, ${personSize}px)`;
+            matrixVisualization.style.gridTemplateColumns = `repeat(${cols}, ${personSize}px)`;
+            matrixVisualization.style.gap = `${Math.max(1, Math.floor(personSize / 5))}px`; // Adjust gap based on size
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const personDiv = document.createElement('div');
+                    personDiv.classList.add('person');
+                    personDiv.style.width = `${personSize}px`;
+                    personDiv.style.height = `${personSize}px`;
+
+                    // Check if the person is on the perimeter
+                    if (r === 0 || r === rows - 1 || c === 0 || c === cols - 1) {
+                        personDiv.classList.add('perimeter-person');
+                    }
+                    matrixVisualization.appendChild(personDiv);
+                }
+            }
+            visualizationSection.style.display = 'block'; // Show the section
+        }
+
+        // Function to display calculation steps
+        function displayCalculationSteps(rows, cols, perimeterCount) {
+            calculationSteps.innerHTML = ''; // Clear previous steps
+            let stepsHtml = '';
+
+            if (rows === 1 && cols === 1) {
+                stepsHtml += `<p class="formula">特殊情况: 1x1 矩阵</p>`;
+                stepsHtml += `<p class="step">只有 1 个人，他/她就在外圈。</p>`;
+                stepsHtml += `<p class="step">总人数 = 1</p>`;
+            } else if (rows === 1) {
+                stepsHtml += `<p class="formula">特殊情况: 只有 1 行</p>`;
+                stepsHtml += `<p class="step">所有 ${cols} 个人都在这唯一的一行上，即外圈。</p>`;
+                stepsHtml += `<p class="step">总人数 = 列数 = ${cols}</p>`;
+            } else if (cols === 1) {
+                stepsHtml += `<p class="formula">特殊情况: 只有 1 列</p>`;
+                stepsHtml += `<p class="step">所有 ${rows} 个人都在这唯一的一列上，即外圈。</p>`;
+                stepsHtml += `<p class="step">总人数 = 行数 = ${rows}</p>`;
+            } else {
+                stepsHtml += `<p class="formula">通用公式: (2 * 行数) + (2 * 列数) - 4</p>`;
+                stepsHtml += `<p class="step">代入数值: (2 * ${rows}) + (2 * ${cols}) - 4</p>`;
+                stepsHtml += `<p class="step">计算两倍行数: ${2 * rows}</p>`;
+                stepsHtml += `<p class="step">计算两倍列数: ${2 * cols}</p>`;
+                stepsHtml += `<p class="step">相加: ${2 * rows} + ${2 * cols} = ${2 * rows + 2 * cols}</p>`;
+                stepsHtml += `<p class="step">减去重复计算的4个角: ${2 * rows + 2 * cols} - 4 = ${perimeterCount}</p>`;
+                stepsHtml += `<p class="step">最终结果 = ${perimeterCount}</p>`;
+            }
+
+            calculationSteps.innerHTML = stepsHtml;
+            calculationSection.style.display = 'block'; // Show the section
+        }
+
+
+        // Function to calculate perimeter
+        function calculatePerimeter() {
+            // Clear previous errors, result, and dynamic sections
+            rowsError.textContent = '';
+            colsError.textContent = '';
+            resultOutput.innerHTML = '<span class="label">结果将显示在这里</span>';
+            matrixVisualization.innerHTML = '';
+            calculationSteps.innerHTML = '';
+            visualizationSection.style.display = 'none';
+            calculationSection.style.display = 'none';
+            visualizationWarning.style.display = 'none';
+
+
+            // Get input values and convert to integers
+            const rowsStr = rowsInput.value;
+            const colsStr = colsInput.value;
+
+            let hasError = false;
+            let rows, cols;
+
+            // Validate Rows
+            if (rowsStr === '') {
+                rowsError.textContent = '请输入行数。'; hasError = true;
+            } else {
+                rows = parseInt(rowsStr, 10);
+                if (isNaN(rows) || rows <= 0 || !Number.isInteger(rows)) {
+                    rowsError.textContent = '请输入一个大于0的正整数。'; hasError = true;
+                }
+            }
+
+            // Validate Columns
+            if (colsStr === '') {
+                colsError.textContent = '请输入列数。'; hasError = true;
+            } else {
+                cols = parseInt(colsStr, 10);
+                if (isNaN(cols) || cols <= 0 || !Number.isInteger(cols)) {
+                    colsError.textContent = '请输入一个大于0的正整数。'; hasError = true;
+                }
+            }
+
+            // If there are errors, stop calculation
+            if (hasError) {
+                return;
+            }
+
+            // Calculate the perimeter count
+            let perimeterCount = 0;
+            if (rows === 1 && cols === 1) { perimeterCount = 1; }
+            else if (rows === 1) { perimeterCount = cols; }
+            else if (cols === 1) { perimeterCount = rows; }
+            else { perimeterCount = (2 * rows) + (2 * cols) - 4; }
+
+            // Display the result
+            resultOutput.innerHTML = `<span class="label">最外一圈总人数：</span>${perimeterCount}`;
+
+            // Render visualization and steps
+            try {
+                renderMatrix(rows, cols);
+                displayCalculationSteps(rows, cols, perimeterCount);
+            } catch (e) {
+                console.error("Error during rendering:", e);
+                // Optionally display a generic rendering error message to the user
+            }
+        }
+
+        // Add event listener to the button
+        calculateButton.addEventListener('click', calculatePerimeter);
+
+        // Optional: Calculate on Enter key press
+        rowsInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') calculatePerimeter(); });
+        colsInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') calculatePerimeter(); });
+
+    </script>
+
+</body>
+</html>
