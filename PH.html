@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式pH值标尺 - 化学入门</title>
+    <!-- 引入 Bootstrap 美化样式 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f4f8; /* 淡雅的背景色 */
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .container {
+            max-width: 700px;
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0056b3; /* 标题蓝色 */
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .ph-scale-container {
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        #phScale {
+            width: 90%;
+            height: 35px;
+            margin: 1rem auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            position: relative; /* 为了定位标记 */
+            background: linear-gradient(to right,
+                red, orange, yellow, lime, cyan, blue, violet); /* pH 颜色渐变 */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+        #phMarker {
+            width: 3px; /* 标记线宽度 */
+            height: 120%; /* 标记线高度，略超出标尺 */
+            background-color: black;
+            position: absolute;
+            top: -10%; /* 使标记线上下居中 */
+            left: 50%; /* 初始位置在中间 (pH 7) */
+            transform: translateX(-50%); /* 精确居中标记线 */
+            transition: left 0.5s ease; /* 平滑移动效果 */
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        /* 添加刻度 */
+        .scale-ticks {
+            width: 90%;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            top: -5px; /* 调整刻度位置 */
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .scale-ticks span {
+            position: relative;
+            display: inline-block;
+            width: 1px; /* 刻度宽度 */
+        }
+         /* 隐藏第一个和最后一个刻度的数字，避免拥挤 */
+        .scale-ticks span:first-child::before,
+        .scale-ticks span:last-child::before {
+             content: '';
+        }
+        .scale-ticks span::before {
+            content: attr(data-ph); /* 显示pH值 */
+            position: absolute;
+            bottom: -18px; /* 数字位置 */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #phDisplay {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background-color: #e9f5ff; /* 淡蓝色背景 */
+            border-radius: 8px;
+            border: 1px solid #bde0fe;
+            text-align: center;
+            min-height: 150px; /* 保证一定高度 */
+        }
+        #phDisplay h3 {
+            margin-top: 0;
+            color: #004085; /* 深蓝色 */
+        }
+        #classification {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin: 0.5rem 0;
+        }
+        /* 根据酸碱性改变分类文字颜色 */
+        .acidic { color: #dc3545; } /* 红色 */
+        .neutral { color: #28a745; } /* 绿色 */
+        .basic { color: #0d6efd; } /* 蓝色 */
+
+        label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        select.form-select {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>探索pH值的世界！</h1>
+        <p class="lead text-center">pH值告诉我们一种物质是酸性、中性还是碱性（也叫碱性）。标尺范围从0到14。</p>
+
+        <div class="interactive-section mt-4">
+            <label for="substanceSelect" class="form-label">选择一种常见物质看看它的pH值：</label>
+            <select class="form-select form-select-lg" id="substanceSelect">
+                <option value="7.0">纯水</option>
+                <option value="1.0">电池酸液 (硫酸)</option>
+                <option value="2.0">胃酸</option>
+                <option value="2.4">柠檬汁</option>
+                <option value="3.0">醋</option>
+                <option value="3.5">橙汁</option>
+                <option value="4.5">番茄汁</option>
+                <option value="5.0">黑咖啡</option>
+                <option value="5.6">雨水 (通常微酸)</option>
+                <option value="6.6">牛奶</option>
+                <option value="7.4">血液</option>
+                <option value="8.3">小苏打溶液</option>
+                <option value="9.5">海水</option>
+                <option value="10.5">肥皂水</option>
+                <option value="11.5">家用氨水</option>
+                <option value="12.5">漂白剂</option>
+                <option value="13.5">强碱溶液 (如NaOH)</option>
+            </select>
+        </div>
+
+        <div class="ph-scale-container">
+            <div id="phScale">
+                <div id="phMarker"></div>
+            </div>
+            <div class="scale-ticks">
+                <span data-ph="0"></span>
+                <span data-ph="1"></span>
+                <span data-ph="2"></span>
+                <span data-ph="3"></span>
+                <span data-ph="4"></span>
+                <span data-ph="5"></span>
+                <span data-ph="6"></span>
+                <span data-ph="7"></span>
+                <span data-ph="8"></span>
+                <span data-ph="9"></span>
+                <span data-ph="10"></span>
+                <span data-ph="11"></span>
+                <span data-ph="12"></span>
+                <span data-ph="13"></span>
+                <span data-ph="14"></span>
+            </div>
+        </div>
+
+
+        <div id="phDisplay">
+            <h3><span id="substanceName">纯水</span></h3>
+            <p>大约 pH 值: <strong id="phValue">7.0</strong></p>
+            <p id="classification" class="neutral">中性</p>
+            <p id="substanceInfo">纯净的水既不是酸性也不是碱性。</p>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS Bundle (不需要可以移除) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> -->
+
+    <!-- 交互逻辑 JavaScript -->
+    <script>
+        const substanceSelect = document.getElementById('substanceSelect');
+        const substanceNameDisplay = document.getElementById('substanceName');
+        const phValueDisplay = document.getElementById('phValue');
+        const classificationDisplay = document.getElementById('classification');
+        const substanceInfoDisplay = document.getElementById('substanceInfo');
+        const phMarker = document.getElementById('phMarker');
+
+        // 存储物质信息 (pH值已在option的value中，这里存额外信息)
+        const substanceData = {
+            "1.0": { name: "电池酸液 (硫酸)", classification: "强酸性", class: "acidic", info: "腐蚀性极强，非常危险！" },
+            "2.0": { name: "胃酸", classification: "强酸性", class: "acidic", info: "帮助我们消化食物，主要成分是盐酸。" },
+            "2.4": { name: "柠檬汁", classification: "酸性", class: "acidic", info: "尝起来很酸，富含柠檬酸。" },
+            "3.0": { name: "醋", classification: "酸性", class: "acidic", info: "厨房常用调料，主要成分是乙酸。" },
+            "3.5": { name: "橙汁", classification: "酸性", class: "acidic", info: "酸甜可口，含有维生素C。" },
+            "4.5": { name: "番茄汁", classification: "酸性", class: "acidic", info: "比橙汁酸性弱一些。" },
+            "5.0": { name: "黑咖啡", classification: "弱酸性", class: "acidic", info: "提神醒脑，但对某些人可能刺激胃。" },
+            "5.6": { name: "雨水", classification: "弱酸性", class: "acidic", info: "自然状态下的雨水因溶解二氧化碳而呈微酸性。" },
+            "6.6": { name: "牛奶", classification: "弱酸性", class: "acidic", info: "接近中性，富含钙质。" },
+            "7.0": { name: "纯水", classification: "中性", class: "neutral", info: "纯净的水既不是酸性也不是碱性。" },
+            "7.4": { name: "血液", classification: "弱碱性", class: "basic", info: "人体血液的pH值需要维持在一个非常精确的范围内。" },
+            "8.3": { name: "小苏打溶液", classification: "弱碱性", class: "basic", info: "常用于烘焙和清洁。" },
+            "9.5": { name: "海水", classification: "碱性", class: "basic", info: "比纯水碱性强，因为溶解了多种矿物质。" },
+            "10.5": { name: "肥皂水", classification: "碱性", class: "basic", info: "摸起来滑滑的，可以去油污。" },
+            "11.5": { name: "家用氨水", classification: "强碱性", class: "basic", info: "有刺激性气味，常用作清洁剂。" },
+            "12.5": { name: "漂白剂", classification: "强碱性", class: "basic", info: "具有漂白和消毒作用，有腐蚀性。" },
+            "13.5": { name: "强碱溶液 (如NaOH)", classification: "强碱性", class: "basic", info: "腐蚀性极强，实验室常用试剂。" }
+        };
+
+        function updateDisplay() {
+            const selectedValue = substanceSelect.value; // 获取选中的pH值 (字符串)
+            const data = substanceData[selectedValue]; // 获取对应的信息对象
+
+            if (data) {
+                const ph = parseFloat(selectedValue); // 转换为数字
+
+                // 更新显示文本
+                substanceNameDisplay.textContent = data.name;
+                phValueDisplay.textContent = ph.toFixed(1); // 显示一位小数
+                classificationDisplay.textContent = data.classification;
+                substanceInfoDisplay.textContent = data.info;
+
+                // 更新分类文字的颜色
+                classificationDisplay.className = ''; // 清除旧的class
+                classificationDisplay.classList.add(data.class); // 添加新的class
+
+                // 更新标记位置
+                // pH范围是0-14，对应标尺的0%-100%
+                const percentage = (ph / 14) * 100;
+                phMarker.style.left = `${percentage}%`;
+
+            } else {
+                // 处理未找到数据的情况（理论上不应发生）
+                console.error("未找到对应pH值的数据:", selectedValue);
+            }
+        }
+
+        // 添加事件监听器，当选择变化时更新显示
+        substanceSelect.addEventListener('change', updateDisplay);
+        // 或者用 'input' 事件，响应更快
+        // substanceSelect.addEventListener('input', updateDisplay);
+
+        // 页面加载时，根据默认选项（纯水）初始化显示
+        window.addEventListener('load', updateDisplay);
+
+    </script>
+
+</body>
+</html>
