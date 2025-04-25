@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式勾股定理演示</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* 改为 flex-start 以容纳更多内容 */
+            min-height: 100vh;
+            background-color: #f0f4f8; /* 淡蓝色背景 */
+            margin: 0;
+            padding: 20px; /* 给页面一些边距 */
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 800px; /* 增加最大宽度 */
+            width: 100%; /* 响应式宽度 */
+            display: flex; /* 使用 flex 布局 */
+            flex-direction: column; /* 垂直排列子元素 */
+            gap: 20px; /* 子元素间距 */
+        }
+        .main-content {
+            display: flex;
+            flex-wrap: wrap; /* 允许换行 */
+            gap: 30px; /* 左右区域间距 */
+        }
+        .controls-info {
+            flex: 1; /* 占据可用空间 */
+            min-width: 250px; /* 最小宽度 */
+        }
+        .visualization {
+            flex: 1.5; /* 可视化区域稍宽 */
+            min-width: 300px; /* 最小宽度 */
+            height: 400px; /* 固定高度 */
+            border: 1px solid #ccc;
+            background-color: #f8f9fa;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* 隐藏超出部分 */
+        }
+        h1 {
+            color: #2c3e50; /* 深蓝灰色 */
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #3498db; /* 蓝色 */
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 5px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .formula {
+            background-color: #e8f4fd; /* 浅蓝色背景 */
+            padding: 12px 18px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace; /* 等宽字体 */
+            font-size: 1.2em; /* 稍大字体 */
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            color: #2980b9; /* 深一点的蓝色 */
+            border: 1px solid #bde0fe; /* 边框 */
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .control-group label {
+            min-width: 60px;
+            color: #333;
+            font-weight: bold;
+            font-style: italic; /* 斜体表示变量 */
+        }
+        .control-group input[type="range"] {
+            flex-grow: 1;
+            margin: 0 10px;
+            cursor: pointer;
+            accent-color: #3498db; /* 滑块颜色 */
+        }
+        .control-group span {
+            min-width: 50px; /* 保证数值显示宽度 */
+            text-align: right;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .summary {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .summary p {
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            color: #333;
+        }
+        .summary strong {
+            color: #e74c3c; /* 强调色 */
+        }
+        .summary .equation {
+            font-weight: bold;
+            color: #27ae60; /* 绿色表示验证 */
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
+        /* SVG 样式 */
+        #pythagoras-svg {
+            width: 100%;
+            height: 100%;
+        }
+        .triangle {
+            fill: rgba(231, 76, 60, 0.3); /* 淡红色填充 */
+            stroke: #c0392b; /* 深红色描边 */
+            stroke-width: 2;
+        }
+        .square-a {
+            fill: rgba(52, 152, 219, 0.5); /* 蓝色填充 */
+            stroke: #2980b9; /* 深蓝色描边 */
+            stroke-width: 1.5;
+        }
+        .square-b {
+            fill: rgba(46, 204, 113, 0.5); /* 绿色填充 */
+            stroke: #27ae60; /* 深绿色描边 */
+            stroke-width: 1.5;
+        }
+        .square-c {
+            fill: rgba(241, 196, 15, 0.5); /* 黄色填充 */
+            stroke: #f39c12; /* 橙色描边 */
+            stroke-width: 1.5;
+        }
+        .side-label {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14px;
+            font-style: italic;
+            fill: #000;
+            text-anchor: middle;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>交互式勾股定理演示</h1>
+
+        <div class="main-content">
+            <div class="controls-info">
+                <h2>勾股定理 (Pythagorean Theorem)</h2>
+                <p>在一个直角三角形中，两条直角边的平方和等于斜边的平方。</p>
+                <div class="formula">
+                    a² + b² = c²
+                </div>
+                <p>使用下面的滑动条调整直角边 <strong>a</strong> 和 <strong>b</strong> 的长度。观察三角形形状、斜边 <strong>c</strong> 的长度以及三边对应正方形面积的变化。</p>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="sideA">边 a:</label>
+                        <input type="range" id="sideA" name="sideA" min="10" max="150" value="60">
+                        <span id="valueA">60</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="sideB">边 b:</label>
+                        <input type="range" id="sideB" name="sideB" min="10" max="150" value="80">
+                        <span id="valueB">80</span>
+                    </div>
+                </div>
+
+                <div class="summary">
+                    <h2>计算结果</h2>
+                    <p>直角边 a = <strong id="summaryA">60</strong></p>
+                    <p>直角边 b = <strong id="summaryB">80</strong></p>
+                    <p>计算斜边 c = √(a² + b²) = <strong id="summaryC">100.00</strong></p>
+                    <hr style="border: none; border-top: 1px dashed #ccc; margin: 10px 0;">
+                    <p>a² = <strong id="summaryA2">3600</strong></p>
+                    <p>b² = <strong id="summaryB2">6400</strong></p>
+                    <p>c² = <strong id="summaryC2">10000.00</strong></p>
+                    <p class="equation" id="verification">验证: 3600 + 6400 = 10000.00</p>
+                </div>
+            </div>
+
+            <div class="visualization">
+                <svg id="pythagoras-svg" viewBox="0 0 400 400">
+                    <!-- 坐标原点在左下角，但 SVG y 轴向下，需要调整 -->
+                    <!-- 预留空间给正方形 -->
+                    <g id="transform-group" transform="translate(180, 220) scale(1, -1)">
+                        <!-- scale(1,-1) 使 y 轴向上 -->
+                        <!-- translate 将原点移到画布中间偏下位置 -->
+
+                        <!-- 正方形 b (在 x 轴下方) -->
+                        <polygon id="square-b" class="square-b" points="0,0 80,0 80,-80 0,-80" />
+                        <!-- 正方形 a (在 y 轴左方) -->
+                        <polygon id="square-a" class="square-a" points="0,0 0,60 -60,60 -60,0" />
+                        <!-- 直角三角形 -->
+                        <polygon id="triangle" class="triangle" points="0,0 80,0 0,60" />
+                        <!-- 正方形 c (在斜边外侧) -->
+                        <polygon id="square-c" class="square-c" points="80,0 0,60 -60,140 20,140" />
+                        <!-- 边长标签 -->
+                        <text id="labelA" class="side-label" x="-30" y="30" transform="scale(1, -1)">a=60</text>
+                        <text id="labelB" class="side-label" x="40" y="-15" transform="scale(1, -1)">b=80</text>
+                        <text id="labelC" class="side-label" x="40" y="45" transform="scale(1, -1) rotate(-38.66)">c=100.00</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取 DOM 元素
+        const sliderA = document.getElementById('sideA');
+        const sliderB = document.getElementById('sideB');
+        const valueA = document.getElementById('valueA');
+        const valueB = document.getElementById('valueB');
+
+        const summaryA = document.getElementById('summaryA');
+        const summaryB = document.getElementById('summaryB');
+        const summaryC = document.getElementById('summaryC');
+        const summaryA2 = document.getElementById('summaryA2');
+        const summaryB2 = document.getElementById('summaryB2');
+        const summaryC2 = document.getElementById('summaryC2');
+        const verification = document.getElementById('verification');
+
+        const svgGroup = document.getElementById('transform-group');
+        const triangle = document.getElementById('triangle');
+        const squareA = document.getElementById('square-a');
+        const squareB = document.getElementById('square-b');
+        const squareC = document.getElementById('square-c');
+        const labelA = document.getElementById('labelA');
+        const labelB = document.getElementById('labelB');
+        const labelC = document.getElementById('labelC');
+
+        // 更新函数
+        function updateVisualization() {
+            // 1. 获取滑块值
+            const a = parseFloat(sliderA.value);
+            const b = parseFloat(sliderB.value);
+
+            // 2. 计算 c 和平方值
+            const c = Math.sqrt(a * a + b * b);
+            const a2 = a * a;
+            const b2 = b * b;
+            const c2 = c * c; // 或者 a2 + b2
+
+            // 3. 更新数值显示
+            valueA.textContent = a.toFixed(0); // 滑块旁边的值取整
+            valueB.textContent = b.toFixed(0);
+
+            summaryA.textContent = a.toFixed(0);
+            summaryB.textContent = b.toFixed(0);
+            summaryC.textContent = c.toFixed(2); // 斜边保留两位小数
+            summaryA2.textContent = a2.toFixed(0);
+            summaryB2.textContent = b2.toFixed(0);
+            summaryC2.textContent = c2.toFixed(2); // c² 保留两位小数
+
+            // 4. 更新验证公式
+            verification.textContent = `验证: ${a2.toFixed(0)} + ${b2.toFixed(0)} = ${c2.toFixed(2)}`;
+            // 检查是否近似相等（处理浮点误差）
+            if (Math.abs(a2 + b2 - c2) < 0.01) {
+                 verification.textContent = `验证: ${a2.toFixed(0)} + ${b2.toFixed(0)} = ${c2.toFixed(2)} ✔️`;
+                 verification.style.color = '#27ae60'; // Green
+            } else {
+                 verification.textContent = `验证: ${a2.toFixed(0)} + ${b2.toFixed(0)} ≈ ${c2.toFixed(2)} (计算误差)`;
+                 verification.style.color = '#e74c3c'; // Red
+            }
+
+
+            // 5. 更新 SVG 图形
+            // 注意：我们在 SVG 中使用了 transform="scale(1, -1)" 来使 y 轴向上，
+            // 所以这里的坐标计算基于标准的笛卡尔坐标系，原点 (0,0) 是直角顶点。
+
+            // 更新三角形顶点
+            triangle.setAttribute('points', `0,0 ${b},0 0,${a}`);
+
+            // 更新正方形 a (沿 y 轴负方向，即向左)
+            squareA.setAttribute('points', `0,0 0,${a} ${-a},${a} ${-a},0`);
+
+            // 更新正方形 b (沿 x 轴负方向，即向下)
+            squareB.setAttribute('points', `0,0 ${b},0 ${b},${-b} 0,${-b}`);
+
+            // 更新正方形 c (在斜边外侧)
+            // 斜边端点: (b, 0) 和 (0, a)
+            // 向量 AB = (0-b, a-0) = (-b, a)
+            // 垂直于 AB 且长度为 c 的向量 (向外): (a, b)
+            // 第三个顶点 (从 (0, a) 移动 (a, b)): (0+a, a+b) = (a, a+b)
+            // 第四个顶点 (从 (b, 0) 移动 (a, b)): (b+a, 0+b) = (a+b, b)
+            // squareC.setAttribute('points', `${b},0 0,${a} ${a},${a+b} ${a+b},${b}`);
+             // 修正正方形 C 的顶点计算：
+            // 顶点1: (b, 0) - 三角形顶点 B
+            // 顶点2: (0, a) - 三角形顶点 A
+            // 顶点3: 从 A(0,a) 沿垂直向量 (a,b) 移动: (0+a, a+b) = (a, a+b)
+            // 顶点4: 从 B(b,0) 沿垂直向量 (a,b) 移动: (b+a, 0+b) = (a+b, b)
+            // 顺序应为 B -> A -> Vertex3 -> Vertex4
+            squareC.setAttribute('points', `${b},0 0,${a} ${a},${a+b} ${a+b},${b}`);
+
+
+            // 6. 更新标签位置和内容
+            // 标签位置需要反转 y 轴 scale
+            labelA.setAttribute('x', -a / 2); // x 设为 -a/2
+            labelA.setAttribute('y', a / 2);  // y 设为 a/2
+            labelA.textContent = `a=${a.toFixed(0)}`;
+            // 调整标签位置使其在正方形外侧中间
+            labelA.setAttribute('transform', `scale(1, -1) translate(0, 0)`); // 基础变换
+
+            labelB.setAttribute('x', b / 2);
+            labelB.setAttribute('y', -b / 2); // y 设为 -b/2
+            labelB.textContent = `b=${b.toFixed(0)}`;
+            labelB.setAttribute('transform', `scale(1, -1) translate(0, 0)`);
+
+            // 标签 C 放在斜边中点外侧
+            const midX = b / 2;
+            const midY = a / 2;
+            // 斜边向量: (-b, a)
+            // 垂直向量: (a, b)
+            // 归一化垂直向量
+            const normX = a / c;
+            const normY = b / c;
+            const labelOffset = 15; // 标签偏移距离
+            labelC.setAttribute('x', midX + normX * labelOffset);
+            labelC.setAttribute('y', midY + normY * labelOffset);
+            labelC.textContent = `c=${c.toFixed(2)}`;
+            // 计算旋转角度 (斜边与 x 轴正方向的夹角)
+            const angleRad = Math.atan2(a, b); // 注意是 atan2(y, x)
+            const angleDeg = angleRad * 180 / Math.PI;
+             // 旋转标签使其平行于斜边 (需要考虑 scale(1,-1) 的影响)
+            // 旋转角度应为负值，因为 scale(1,-1) 反转了角度方向
+            labelC.setAttribute('transform', `scale(1, -1) rotate(${-angleDeg} ${midX + normX * labelOffset},${midY + normY * labelOffset})`);
+             // 微调标签位置，使其更居中于正方形C
+            const centerC_x = (b + a + a + b) / 4; // 正方形C的几何中心 x (近似)
+            const centerC_y = (0 + a + a + b + b) / 4; // 正方形C的几何中心 y (近似)
+            labelC.setAttribute('x', centerC_x);
+            labelC.setAttribute('y', centerC_y);
+            labelC.setAttribute('transform', `scale(1, -1) rotate(${-angleDeg} ${centerC_x}, ${centerC_y})`); // 围绕中心旋转
+
+
+        }
+
+        // 添加事件监听器
+        sliderA.addEventListener('input', updateVisualization);
+        sliderB.addEventListener('input', updateVisualization);
+
+        // 初始化页面
+        updateVisualization(); // 使用初始值调用一次以绘制初始状态
+
+    </script>
+</body>
+</html>
